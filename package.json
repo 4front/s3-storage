@@ -1,0 +1,35 @@
+{
+  "name": "4front-s3-deployments",
+  "version": "0.0.1",
+  "description": "S3 based deployments for 4front",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec --bail test/",
+    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- --reporter dot test/",
+    "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec test/"
+  },
+  "author": "David Von Lehman <https://github.com/dvonlehman>",
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  ],
+  "dependencies": {
+    "async": "^0.9.0",
+    "aws-sdk": "^2.1.19",
+    "dash-assert": "^1.0.1",
+    "debug": "^2.1.3",
+    "lodash": "^3.6.0",
+    "mime": "^1.3.4",
+    "simple-errors": "^1.0.1"
+  },
+  "devDependencies": {
+    "dash-assert": "^1.0.1",
+    "istanbul": "^0.3.11",
+    "mocha": "^2.2.1",
+    "s3rver": "0.0.2",
+    "shortid": "^2.2.2",
+    "simple-bufferstream": "^1.0.0"
+  }
+}
