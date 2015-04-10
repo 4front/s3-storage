@@ -31,12 +31,6 @@ You can pass in any valid option accepted by the [AWS.config](http://docs.aws.am
 
 ~~~js
 // Deploy an individual file
-var fileInfo = {
-	path: '/js/app.js',
-	contents: fs.createReadStream('/js/app.js'),
-	size: fs.statSync('/js/app.js').size
-};
-
 s3Deployments.deployFile(appId, versionId, fileInfo, callback);
 
 // Returns a readable stream
@@ -45,9 +39,17 @@ s3Deployments.readFileStream(appId, versionId, filePath);
 // Delete version
 s3Deployments.deleteVersion(appId, versionId, callback);
 
+// Delete all deployed versions for an app
+s3Deployments.deleteAllVersions(appId, callback);
+
+// List all the files for a version
+s3Deployments.listFiles(appId, versionId, callback);
+
 // Check if file exists
 s3Deployments.fileExists(appId, versionId, filePath, callback);
 ~~~
+
+See the [unit tests](https://github.com/4front/s3-deployments/blob/master/test/s3.js) for example calls of all these functions.
 
 ## Running Tests
 ~~~

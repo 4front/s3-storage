@@ -12,21 +12,20 @@ require('dash-assert');
 describe('S3Deployments', function() {
 	var self;
 
+	var port = 4658;
+	var bucket = "4front-deployments";
+
+	var s3Deployments = new S3Deployments({
+		bucket: bucket,
+		accessKeyId: "123",
+		secretAccessKey: "abc",
+		endpoint: "localhost:" + port,
+		sslEnabled: false,
+		s3ForcePathStyle: true
+	});
+
 	before(function(done) {
 		self = this;
-
-		var port = 4658;
-		var bucket = "4front-deployments";
-
-		this.s3 = new S3Deployments({
-			bucket: bucket,
-			accessKeyId: "123",
-		  secretAccessKey: "abc",
-		  endpoint: "localhost:" + port,
-		  sslEnabled: false,
-		  s3ForcePathStyle: true
-		});
-
 		var s3rver = new S3rver();
 
 		var fakeS3Dir = '/tmp/s3rver';
@@ -50,7 +49,7 @@ describe('S3Deployments', function() {
 			},
 			function(cb) {
 				// Ensure the bucket exists
-				self.s3._s3.createBucket({ACL: 'public-read', Bucket: bucket}, function(err) {
+				s3Deployments._s3.createBucket({ACL: 'public-read', Bucket: bucket}, function(err) {
 					if (err && err.code !== 'BucketAlreadyExists')
 						return cb(err);
 
@@ -76,10 +75,10 @@ describe('S3Deployments', function() {
 
 		async.series([
 			function(cb) {
-				self.s3.deployFile(self.appId, self.versionId, fileInfo, cb);
+				s3Deployments.deployFile(self.appId, self.versionId, fileInfo, cb);
 			},
 			function(cb) {
-				self.s3.fileExists(self.appId, self.versionId, fileInfo.path, function(err, exists) {
+				s3Deployments.fileExists(self.appId, self.versionId, fileInfo.path, function(err, exists) {
 					if (err) return cb(err);
 
 					assert.isTrue(exists);
@@ -88,7 +87,7 @@ describe('S3Deployments', function() {
 			},
 			function(cb) {
 				var output = '';
-				self.s3.readFileStream(self.appId, self.versionId, fileInfo.path)
+				s3Deployments.readFileStream(self.appId, self.versionId, fileInfo.path)
 					.on('data', function(chunk) {
 						output += chunk.toString();
 					})
@@ -104,7 +103,7 @@ describe('S3Deployments', function() {
 	});
 
 	it('fileExists returns false for missing file', function(done) {
-		self.s3.fileExists(this.appId, this.versionId, 'missingfile.txt', function(err, exists) {
+		s3Deployments.fileExists(this.appId, this.versionId, 'missingfile.txt', function(err, exists) {
 			if (err) return done(err);
 
 			assert.isFalse(exists);
@@ -113,7 +112,7 @@ describe('S3Deployments', function() {
 	});
 
 	it('read missing file', function(done) {
-		this.s3.readFileStream(this.appId, this.versionId, 'missingfile.txt')
+		s3Deployments.readFileStream(this.appId, this.versionId, 'missingfile.txt')
 			.on('missing', function(err) {
 				assert.equal(err.code, 'fileNotFound');
 				done();
@@ -123,29 +122,39 @@ describe('S3Deployments', function() {
 			});
 	});
 
-	it('delete version', function(done) {
+	it('listFiles()', function(done) {
+		var files = ["js/main.js", "css/styles.css", "index.html"];
+		async.series([
+			function(cb) {
+				deployTestFiles(self.appId, self.versionId, files, cb);
+			},
+			function(cb) {
+				s3Deployments.listFiles(self.appId, self.versionId, function(err, data) {
+					if (err) return cb(err);
+
+					assert.noDifferences(files, data);
+					cb();
+				})
+			}
+		], done);
+	});
+
+	it('deleteVersion()', function(done) {
 		var files = ['js/main.js', 'css/styles.css'];
 
 		async.series([
 			function(cb) {
 				// Upload some files
-				async.each(files, function(path, cb1) {
-					var fileInfo = {
-						path: path,
-						contents: sbuff(path),
-						size: path.length
-					};
-					self.s3.deployFile(self.appId, self.versionId, fileInfo, cb1);
-				}, cb);
+				deployTestFiles(self.appId, self.versionId, files, cb);
 			},
 			function(cb) {
 				// Delete the version
-				self.s3.deleteVersion(self.appId, self.versionId, cb);
+				s3Deployments.deleteVersion(self.appId, self.versionId, cb);
 			},
 			function(cb) {
 				// Verify that the files are gone.
 				async.each(files, function(filePath, cb1) {
-					self.s3.fileExists(self.appId, self.versionId, filePath, function(err, exists) {
+					s3Deployments.fileExists(self.appId, self.versionId, filePath, function(err, exists) {
 						if (err) return cb1(err);
 
 						assert.isFalse(exists);
@@ -155,4 +164,42 @@ describe('S3Deployments', function() {
 			}
 		], done);
 	});
+
+	it('deleteAllVersions()', function(done) {
+		var versions = _.times(3, function() {
+			return shortid.generate();
+		});
+
+		var files = ['js/main.js', 'css/styles.css'];
+
+		async.series([
+			function(cb) {
+				async.each(versions, function(versionId, cb1) {
+					deployTestFiles(self.appId, versionId, files, cb1);
+				}, cb);
+			},
+			function(cb) {
+				// Delete the application
+				s3Deployments.deleteAllVersions(self.appId, cb);
+			},
+			function(cb) {
+				// Verify that the versions are gone
+				s3Deployments._listKeys(self.appId, function(err, keys) {
+					assert.equal(0, keys.length);
+					cb();
+				});
+			}
+		], done);
+	});
+
+	function deployTestFiles(appId, versionId, files, callback) {
+		async.each(files, function(path, cb) {
+			var fileInfo = {
+				path: path,
+				contents: sbuff(path),
+				size: path.length
+			};
+			s3Deployments.deployFile(appId, versionId, fileInfo, cb);
+		}, callback);
+	}
 });
