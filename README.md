@@ -61,7 +61,7 @@ Licensed under the Apache License, Version 2.0. See the top-level file LICENSE.t
 [npm-url]: https://npmjs.org/package/4front-s3-deployments
 [travis-image]: https://img.shields.io/travis/4front/s3-deployments.svg?style=flat
 [travis-url]: https://travis-ci.org/4front/s3-deployments
-[coveralls-image]: https://img.shields.io/coveralls/4front-s3-deployments.svg?style=flat
+[coveralls-image]: https://img.shields.io/coveralls/4front/s3-deployments.svg?style=flat
 [coveralls-url]: https://coveralls.io/r/4front/s3-deployments?branch=master
 [downloads-image]: https://img.shields.io/npm/dm/4front-s3-deployments.svg?style=flat
 [downloads-url]: https://npmjs.org/package/4front-s3-deployments

@@ -112,6 +112,17 @@ describe('S3Deployments', function() {
 		});
 	});
 
+	it('read missing file', function(done) {
+		this.s3.readFileStream(this.appId, this.versionId, 'missingfile.txt')
+			.on('missing', function(err) {
+				assert.equal(err.code, 'fileNotFound');
+				done();
+			})
+			.on('end', function() {
+				assert.fail("error event should have fired");
+			});
+	});
+
 	it('delete version', function(done) {
 		var files = ['js/main.js', 'css/styles.css'];
 
