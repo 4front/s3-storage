@@ -48,15 +48,15 @@ describe('S3Deployments', function() {
 		      .setSilent(true)
 		      .run(cb);
 			},
-			// function(cb) {
-			// 	// Ensure the bucket exists
-			// 	self.s3._s3.createBucket({ACL: 'public-read', Bucket: bucket}, function(err) {
-			// 		if (err && err.code !== 'BucketAlreadyExists')
-			// 			return cb(err);
-			//
-			// 		cb();
-			// 	});
-			// }
+			function(cb) {
+				// Ensure the bucket exists
+				self.s3._s3.createBucket({ACL: 'public-read', Bucket: bucket}, function(err) {
+					if (err && err.code !== 'BucketAlreadyExists')
+						return cb(err);
+
+					cb();
+				});
+			}
 		], done);
 	});
 
