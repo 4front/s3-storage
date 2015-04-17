@@ -1,6 +1,6 @@
 {
   "name": "4front-s3-deployments",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "S3 based deployments for 4front",
   "main": "index.js",
   "scripts": {
@@ -9,6 +9,10 @@
     "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec test/"
   },
   "author": "David Von Lehman <https://github.com/dvonlehman>",
+  "repository": {
+    "url": "https://github.com/4front/s3-deployments",
+    "type": "git"
+  },
   "licenses": [
     {
       "type": "Apache-2.0",
