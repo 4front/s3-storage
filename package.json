@@ -1,7 +1,7 @@
 {
-  "name": "4front-s3-deployments",
+  "name": "4front-s3-storage",
   "version": "0.0.2",
-  "description": "S3 based deployments for 4front",
+  "description": "S3 based storage for 4front",
   "main": "index.js",
   "scripts": {
     "test": "mocha --reporter spec --bail test/",
@@ -10,7 +10,7 @@
   },
   "author": "David Von Lehman <https://github.com/dvonlehman>",
   "repository": {
-    "url": "https://github.com/4front/s3-deployments",
+    "url": "https://github.com/4front/s3-storage",
     "type": "git"
   },
   "licenses": [
@@ -22,7 +22,6 @@
   "dependencies": {
     "async": "^0.9.0",
     "aws-sdk": "^2.1.19",
-    "dash-assert": "^1.0.1",
     "debug": "^2.1.3",
     "lodash": "^3.6.0",
     "mime": "^1.3.4",
