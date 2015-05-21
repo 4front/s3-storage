@@ -162,6 +162,31 @@ describe('S3Storage', function() {
 		], done);
 	});
 
+	describe('getMetadata()', function() {
+		it('existing file', function(done) {
+			var contents = "text file contents";
+			var fileInfo = {
+				path: "appid/versionid/files/plain.txt",
+				contents: sbuff(contents),
+				size: contents.length
+			};
+
+			s3Storage.writeFile(fileInfo, function() {
+				s3Storage.getMetadata(fileInfo.path, function(err, metadata) {
+					assert.equal(metadata.ContentType, 'text/plain; charset=utf-8');
+					done();
+				});
+			});
+		});
+
+		it('non-existant file', function(done) {
+			s3Storage.getMetadata("missingfile.txt", function(err, metadata) {
+				assert.isNull(metadata);
+				done();
+			});
+		});
+	});
+
 	function deployTestFiles(files, callback) {
 		async.each(files, function(path, cb) {
 			var fileInfo = {
