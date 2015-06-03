@@ -15,15 +15,6 @@ describe('S3Storage', function() {
 	var port = 4658;
 	var bucket = "4front-deployments";
 
-	var s3Storage = new S3Storage({
-		bucket: bucket,
-		accessKeyId: "123",
-		secretAccessKey: "abc",
-		endpoint: "localhost:" + port,
-		sslEnabled: false,
-		s3ForcePathStyle: true
-	});
-
 	before(function(done) {
 		self = this;
 		var s3rver = new S3rver();
@@ -46,17 +37,29 @@ describe('S3Storage', function() {
 		      .setDirectory(fakeS3Dir)
 		      .setSilent(true)
 		      .run(cb);
-			},
-			function(cb) {
-				// Ensure the bucket exists
-				s3Storage._s3.createBucket({ACL: 'public-read', Bucket: bucket}, function(err) {
-					if (err && err.code !== 'BucketAlreadyExists')
-						return cb(err);
-
-					cb();
-				});
 			}
 		], done);
+	});
+
+	beforeEach(function(done) {
+		this.options = {
+			bucket: bucket,
+			accessKeyId: "123",
+			secretAccessKey: "abc",
+			endpoint: "localhost:" + port,
+			sslEnabled: false,
+			s3ForcePathStyle: true
+		};
+
+		this.s3Storage = new S3Storage(this.options);
+
+		// Ensure the bucket exists
+		this.s3Storage._s3.createBucket({ACL: 'public-read', Bucket: this.options.bucket}, function(err) {
+			if (err && err.code !== 'BucketAlreadyExists')
+				return done(err);
+
+			done();
+		});
 	});
 
 	it('deployFile', function(done) {
@@ -70,10 +73,10 @@ describe('S3Storage', function() {
 
 		async.series([
 			function(cb) {
-				s3Storage.writeFile(fileInfo, cb);
+				self.s3Storage.writeFile(fileInfo, cb);
 			},
 			function(cb) {
-				s3Storage.fileExists(fileInfo.path, function(err, exists) {
+				self.s3Storage.fileExists(fileInfo.path, function(err, exists) {
 					if (err) return cb(err);
 
 					assert.isTrue(exists);
@@ -82,7 +85,7 @@ describe('S3Storage', function() {
 			},
 			function(cb) {
 				var output = '';
-				s3Storage.readFileStream(fileInfo.path)
+				self.s3Storage.readFileStream(fileInfo.path)
 					.on('data', function(chunk) {
 						output += chunk.toString();
 					})
@@ -98,7 +101,7 @@ describe('S3Storage', function() {
 	});
 
 	it('fileExists returns false for missing file', function(done) {
-		s3Storage.fileExists('dir/missingfile.txt', function(err, exists) {
+		self.s3Storage.fileExists('dir/missingfile.txt', function(err, exists) {
 			if (err) return done(err);
 
 			assert.isFalse(exists);
@@ -107,7 +110,7 @@ describe('S3Storage', function() {
 	});
 
 	it('read missing file', function(done) {
-		s3Storage.readFileStream('directory/missingfile.txt')
+		self.s3Storage.readFileStream('directory/missingfile.txt')
 			.on('missing', function(err) {
 				assert.equal(err.code, 'fileNotFound');
 				done();
@@ -122,10 +125,10 @@ describe('S3Storage', function() {
 		var files = [prefix + "/js/main.js", prefix + "/css/styles.css", prefix + "/index.html"];
 		async.series([
 			function(cb) {
-				deployTestFiles(files, cb);
+				deployTestFiles(self.s3Storage, files, cb);
 			},
 			function(cb) {
-				s3Storage.listFiles(prefix, function(err, data) {
+				self.s3Storage.listFiles(prefix, function(err, data) {
 					if (err) return cb(err);
 
 					assert.noDifferences(files, data);
@@ -142,16 +145,16 @@ describe('S3Storage', function() {
 		async.series([
 			function(cb) {
 				// Upload some files
-				deployTestFiles(files, cb);
+				deployTestFiles(self.s3Storage, files, cb);
 			},
 			function(cb) {
 				// Delete the version
-				s3Storage.deleteFiles(prefix, cb);
+				self.s3Storage.deleteFiles(prefix, cb);
 			},
 			function(cb) {
 				// Verify that the files are gone.
 				async.each(files, function(filePath, cb1) {
-					s3Storage.fileExists(filePath, function(err, exists) {
+					self.s3Storage.fileExists(filePath, function(err, exists) {
 						if (err) return cb1(err);
 
 						assert.isFalse(exists);
@@ -171,8 +174,8 @@ describe('S3Storage', function() {
 				size: contents.length
 			};
 
-			s3Storage.writeFile(fileInfo, function() {
-				s3Storage.getMetadata(fileInfo.path, function(err, metadata) {
+			self.s3Storage.writeFile(fileInfo, function() {
+				self.s3Storage.getMetadata(fileInfo.path, function(err, metadata) {
 					assert.equal(metadata.ContentType, 'text/plain; charset=utf-8');
 					done();
 				});
@@ -180,14 +183,34 @@ describe('S3Storage', function() {
 		});
 
 		it('non-existant file', function(done) {
-			s3Storage.getMetadata("missingfile.txt", function(err, metadata) {
+			self.s3Storage.getMetadata("missingfile.txt", function(err, metadata) {
 				assert.isNull(metadata);
 				done();
 			});
 		});
 	});
 
-	function deployTestFiles(files, callback) {
+	describe('key prefix', function() {
+		it('writes with prefix', function(done) {
+			this.options.keyPrefix = 'prefix/';
+
+			var contents = "text file contents";
+			var fileInfo = {
+				path: "pathname/plain.txt",
+				contents: sbuff(contents),
+				size: contents.length
+			};
+
+			self.s3Storage.writeFile(fileInfo, function() {
+				self.s3Storage._listKeys('pathname', function(err, keys) {
+					assert.equal(keys[0], 'prefix/pathname/plain.txt');
+					done();
+				});
+			});
+		});
+	});
+
+	function deployTestFiles(s3Storage, files, callback) {
 		async.each(files, function(path, cb) {
 			var fileInfo = {
 				path: path,
