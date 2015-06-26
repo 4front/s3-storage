@@ -62,7 +62,7 @@ describe('S3Storage', function() {
 		});
 	});
 
-	it('deployFile', function(done) {
+	it('writeFile', function(done) {
 		var fileContents = "text file contents";
 
 		var fileInfo = {
@@ -99,6 +99,62 @@ describe('S3Storage', function() {
 			}
 		], done);
 	});
+
+	describe('readFile', function() {
+		it('existing file', function(done) {
+			var fileContents = "text file contents";
+
+			var fileInfo = {
+				path: "appid/versionid/files/plain.txt",
+				contents: sbuff(fileContents),
+				size: fileContents.length
+			};
+
+			async.series([
+				function(cb) {
+					self.s3Storage.writeFile(fileInfo, cb);
+				},
+				function(cb) {
+					self.s3Storage.readFile(fileInfo.path, function(err, data) {
+						if (err) return cb(err);
+
+						assert.equal(data, fileContents);
+						cb();
+					});
+				}
+			], done);
+		});
+
+		it('missing file', function(done) {
+			self.s3Storage.readFile('directory/missingfile.txt', function(err, data) {
+				if (err) return done(err);
+
+				assert.isNull(data);
+				done();
+			});
+		});
+	});
+
+	// The S3 mock doesn't support the upload function
+	// it('writeStream', function(done) {
+	// 	var fileContents = "text file contents";
+	//
+	// 	var fileInfo = {
+	// 		path: "appid/versionid/files/plain.txt",
+	// 		contents: sbuff(fileContents)
+	// 	};
+	//
+	// 	async.series([
+	// 		function(cb) {
+	// 			self.s3Storage.writeStream(fileInfo, cb);
+	// 		},
+	// 		function(cb) {
+	// 			self.s3Storage.readFile(fileInfo.path, function(err, data) {
+	// 				assert.equal(data, fileContents);
+	// 			});
+	// 		}
+	// 	], done);
+	// });
 
 	it('fileExists returns false for missing file', function(done) {
 		self.s3Storage.fileExists('dir/missingfile.txt', function(err, exists) {
