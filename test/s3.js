@@ -178,6 +178,7 @@ describe('S3Storage', function() {
 
 	it('listFiles()', function(done) {
 		var prefix = "dir1/dir2";
+
 		var files = [prefix + "/js/main.js", prefix + "/css/styles.css", prefix + "/index.html"];
 		async.series([
 			function(cb) {
@@ -189,7 +190,7 @@ describe('S3Storage', function() {
 
 					assert.noDifferences(files, data);
 					cb();
-				})
+				});
 			}
 		], done);
 	});
