@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "dash-assert": "^1.0.1",
+    "eslint": "^1.1.0",
     "istanbul": "^0.3.11",
     "mocha": "^2.2.1",
     "s3rver": "0.0.2",
