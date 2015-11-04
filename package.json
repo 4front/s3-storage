@@ -30,11 +30,13 @@
   },
   "devDependencies": {
     "dash-assert": "^1.0.1",
-    "eslint": "^1.1.0",
+    "eslint": "^1.8.0",
+    "eslint-config-4front": "^1.0.1",
     "istanbul": "^0.3.11",
     "mocha": "^2.2.1",
     "s3rver": "0.0.2",
     "shortid": "^2.2.2",
-    "simple-bufferstream": "^1.0.0"
+    "simple-bufferstream": "^1.0.0",
+    "through2": "^2.0.0"
   }
 }
