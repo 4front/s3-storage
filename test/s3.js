@@ -183,7 +183,7 @@ describe('S3Storage', function() {
       var output = '';
       this.s3Storage.readFileStream(this.fileInfo.path)
         .on('metadata', function(metadata) {
-          assert.equal(metadata['content-type'], 'text/plain; charset=utf-8');
+          assert.equal(metadata.contentType, 'text/plain; charset=utf-8');
           // assert.equal(metadata['cache-control'], 'max-age=' + self.fileInfo.maxAge);
         })
         .on('error', done)
