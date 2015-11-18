@@ -16,6 +16,7 @@ describe('S3Storage', function() {
   var bucket = '4front-deployments';
 
   before(function(done) {
+    this.timeout(5000);
     self = this;
     var s3rver = new S3rver();
 
