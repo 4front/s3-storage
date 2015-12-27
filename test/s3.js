@@ -85,15 +85,16 @@ describe('S3Storage', function() {
       function(cb) {
         var output = '';
         self.s3Storage.readFileStream(fileInfo.path)
-          .on('data', function(chunk) {
-            output += chunk.toString();
+          .on('metadata', function() {
           })
-          .on('error', function(err) {
-            return cb(err);
-          })
-          .on('end', function() {
-            assert.equal(output, fileContents);
-            cb();
+          .on('stream', function(stream) {
+            stream.pipe(through(function(chunk, enc, _cb) {
+              output += chunk.toString();
+              _cb();
+            }, function() {
+              assert.equal(output, fileContents);
+              cb();
+            }));
           });
       }
     ], done);
@@ -188,13 +189,15 @@ describe('S3Storage', function() {
           // assert.equal(metadata['cache-control'], 'max-age=' + self.fileInfo.maxAge);
         })
         .on('error', done)
-        .pipe(through(function(chunk, enc, cb) {
-          output += chunk.toString();
-          cb();
-        }, function() {
-          assert.equal(output, self.fileContents);
-          done();
-        }));
+        .on('stream', function(stream) {
+          stream.pipe(through(function(chunk, enc, cb) {
+            output += chunk.toString();
+            cb();
+          }, function() {
+            assert.equal(output, self.fileContents);
+            done();
+          }));
+        });
     });
 
     it('read missing file', function(done) {
@@ -202,9 +205,6 @@ describe('S3Storage', function() {
         .on('missing', function(err) {
           assert.equal(err.code, 'fileNotFound');
           done();
-        })
-        .on('end', function() {
-          assert.fail('error event should have fired');
         });
     });
   });
