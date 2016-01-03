@@ -266,7 +266,7 @@ describe('S3Storage', function() {
 
       self.s3Storage.writeFile(fileInfo, function() {
         self.s3Storage.getMetadata(fileInfo.path, function(err, metadata) {
-          assert.equal(metadata.ContentType, 'text/plain; charset=utf-8');
+          assert.equal(metadata.contentType, 'text/plain; charset=utf-8');
           done();
         });
       });
