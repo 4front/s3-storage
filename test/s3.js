@@ -300,6 +300,78 @@ describe('S3Storage', function() {
     });
   });
 
+  describe('fallback bucket', function() {
+    beforeEach(function(done) {
+      self = this;
+      // Ensure the bucket exists
+      this.options.fallback = {
+        bucket: 'fallback-bucket'
+      };
+
+      this.s3Storage = new S3Storage(this.options);
+
+      this.s3Storage._s3Fallback.createBucket({ACL: 'public-read', Bucket: this.options.fallback.bucket}, function(err) {
+        if (err && err.code !== 'BucketAlreadyExists') return done(err);
+        done();
+      });
+    });
+
+    it('file exists in fallback but not primary', function(done) {
+      var filename = shortid.generate() + '.txt';
+      var s3Options = {
+        Bucket: this.options.fallback.bucket,
+        Key: filename,
+        Body: '123',
+        ContentType: 'text/plain'
+      };
+
+      async.series([
+        function(cb) {
+          self.s3Storage._s3Fallback.upload(s3Options, cb);
+        },
+        function(cb) {
+          self.s3Storage.fileExists(filename, function(err, exists) {
+            if (err) return cb(err);
+            assert.equal(exists, 'fallback');
+            cb();
+          });
+        }
+      ], done);
+    });
+
+    it('file does not exist in primary or fallback', function(done) {
+      var filename = shortid.generate() + '.txt';
+
+      self.s3Storage.fileExists(filename, function(err, exists) {
+        if (err) return done(err);
+        assert.equal(exists, false);
+        done();
+      });
+    });
+
+    it('reads object from fallback bucket if specified', function(done) {
+      var filename = shortid.generate() + '.txt';
+      var s3Options = {
+        Bucket: this.options.fallback.bucket,
+        Key: filename,
+        Body: '123',
+        ContentType: 'text/plain'
+      };
+
+      self.s3Storage._s3Fallback.upload(s3Options, function() {
+        var output = '';
+        self.s3Storage.readFileStream(filename, true)
+          .pipe(through(function(chunk, enc, cb) {
+            output += chunk.toString();
+            cb();
+          }, function() {
+            assert.equal(output, '123');
+            done();
+          }));
+      });
+    });
+  });
+
   function deployTestFiles(s3Storage, files, callback) {
     async.each(files, function(path, cb) {
       var fileInfo = {
