@@ -1,3 +1,5 @@
+var os = require('os');
+var path = require('path');
 var async = require('async');
 var assert = require('assert');
 var sbuff = require('simple-bufferstream');
@@ -73,10 +75,12 @@ describe('S3Storage', function() {
 
   it('writeFile', function(done) {
     var fileContents = 'text file contents';
+    var testFile = path.join(os.tmpdir(), shortid.generate() + '.txt');
+    fs.writeFileSync(testFile, fileContents);
 
     var fileInfo = {
       path: 'appid/versionid/files/plain.txt',
-      contents: sbuff(fileContents),
+      contents: fs.createReadStream(testFile),
       size: fileContents.length
     };
 
@@ -112,10 +116,13 @@ describe('S3Storage', function() {
   describe('readFile', function() {
     it('existing file', function(done) {
       var fileContents = 'text file contents';
+      var fileName = shortid.generate() + '.txt';
+      var testFile = path.join(os.tmpdir(), fileName);
+      fs.writeFileSync(testFile, fileContents);
 
       var fileInfo = {
-        path: 'appid/versionid/files/' + shortid.generate() + '.txt',
-        contents: sbuff(fileContents),
+        path: 'appid/versionid/files/' + fileName,
+        contents: fs.createReadStream(testFile),
         size: fileContents.length
       };
 
@@ -178,10 +185,13 @@ describe('S3Storage', function() {
     beforeEach(function(done) {
       self = this;
       this.fileContents = 'asasfasdfasdf';
-      // this.filePath =
+      this.fileName = shortid.generate() + '.txt';
+      this.filePath = path.join(os.tmpdir(), this.fileName);
+      fs.writeFileSync(this.filePath, this.fileContents);
+
       this.fileInfo = {
-        path: 'appid/versionid/files/' + shortid.generate() + '.txt',
-        contents: sbuff(this.fileContents),
+        path: 'appid/versionid/files/' + this.fileName,
+        contents: fs.createReadStream(this.filePath),
         size: this.fileContents.length,
         gzipEncoded: true,
         maxAge: 10000
@@ -384,11 +394,13 @@ describe('S3Storage', function() {
   });
 
   function deployTestFiles(s3Storage, files, callback) {
-    async.each(files, function(path, cb) {
+    async.each(files, function(filename, cb) {
+      var filePath = path.join(os.tmpdir(), shortid.generate());
+      fs.writeFileSync(filePath, filename);
       var fileInfo = {
-        path: path,
-        contents: sbuff(path),
-        size: path.length
+        path: filename,
+        contents: fs.createReadStream(filePath),
+        size: filename.length
       };
       s3Storage.writeFile(fileInfo, cb);
     }, callback);
