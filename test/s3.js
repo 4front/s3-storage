@@ -5,6 +5,7 @@ var S3rver = require('s3rver');
 var fs = require('fs');
 var shortid = require('shortid');
 var through = require('through2');
+var metricDebug = require('debug')('metrics');
 var S3Storage = require('../lib/s3');
 
 require('dash-assert');
@@ -48,13 +49,22 @@ describe('S3Storage', function() {
       secretAccessKey: 'abc',
       endpoint: 'localhost:' + port,
       sslEnabled: false,
-      s3ForcePathStyle: true
+      s3ForcePathStyle: true,
+      metrics: {
+        timing: function(key, ms) {
+          metricDebug('%s - %s ms', key, Math.round(ms * 100) / 100);
+        },
+        increment: function(key) {
+          metricDebug('increment %s', key);
+        }
+      }
     };
 
     this.s3Storage = new S3Storage(this.options);
 
     // Ensure the bucket exists
-    this.s3Storage._s3.createBucket({ACL: 'public-read', Bucket: this.options.bucket}, function(err) {
+    var bucketParams = {ACL: 'public-read', Bucket: this.options.bucket};
+    this.s3Storage._s3.createBucket(bucketParams, function(err) {
       if (err && err.code !== 'BucketAlreadyExists') return done(err);
 
       done();
@@ -310,7 +320,8 @@ describe('S3Storage', function() {
 
       this.s3Storage = new S3Storage(this.options);
 
-      this.s3Storage._s3Fallback.createBucket({ACL: 'public-read', Bucket: this.options.fallback.bucket}, function(err) {
+      var bucketParams = {ACL: 'public-read', Bucket: this.options.fallback.bucket};
+      this.s3Storage._s3Fallback.createBucket(bucketParams, function(err) {
         if (err && err.code !== 'BucketAlreadyExists') return done(err);
         done();
       });
