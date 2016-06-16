@@ -305,14 +305,18 @@ describe('S3Storage', function() {
       this.options.keyPrefix = 'prefix/';
 
       var contents = 'text file contents';
+      var tempFile = path.join(os.tmpdir(), shortid.generate());
+      fs.writeFileSync(tempFile, contents);
       var fileInfo = {
         path: 'pathname/plain.txt',
-        contents: sbuff(contents),
+        contents: fs.createReadStream(tempFile),
         size: contents.length
       };
 
-      self.s3Storage.writeFile(fileInfo, function() {
-        self.s3Storage._listKeys('pathname', function(err, keys) {
+      self.s3Storage.writeFile(fileInfo, function(err) {
+        if (err) return done(err);
+
+        self.s3Storage._listKeys('pathname', function(_err, keys) {
           assert.equal(keys[0], 'prefix/pathname/plain.txt');
           done();
         });
