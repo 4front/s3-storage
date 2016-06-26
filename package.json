@@ -36,6 +36,7 @@
     "s3rver": "0.0.14",
     "shortid": "^2.2.6",
     "simple-bufferstream": "^1.0.0",
+    "sinon": "^1.17.4",
     "through2": "^2.0.1"
   }
 }

@@ -2,6 +2,7 @@ var os = require('os');
 var path = require('path');
 var async = require('async');
 var assert = require('assert');
+var sinon = require('sinon');
 var sbuff = require('simple-bufferstream');
 var S3rver = require('s3rver');
 var fs = require('fs');
@@ -46,6 +47,7 @@ describe('S3Storage', function() {
 
   beforeEach(function(done) {
     this.options = {
+      region: 'dummy-region',
       bucket: bucket,
       accessKeyId: '123',
       secretAccessKey: 'abc',
@@ -177,6 +179,24 @@ describe('S3Storage', function() {
       if (err) return done(err);
 
       assert.isFalse(exists);
+      done();
+    });
+  });
+
+  it('fileExists triggers lazy replicator for missing file', function(done) {
+    this.s3Storage.options.lazyReplicator = {
+      trigger: sinon.spy(function() {})
+    };
+
+    self.s3Storage.fileExists('dir/missingfile.txt', function(err, exists) {
+      if (err) return done(err);
+
+      assert.isFalse(exists);
+      assert.isTrue(self.s3Storage.options.lazyReplicator.trigger.calledWith({
+        source: 's3Storage',
+        key: 'dir/missingfile.txt',
+        region: 'dummy-region'
+      }));
       done();
     });
   });
@@ -320,79 +340,6 @@ describe('S3Storage', function() {
           assert.equal(keys[0], 'prefix/pathname/plain.txt');
           done();
         });
-      });
-    });
-  });
-
-  describe('fallback bucket', function() {
-    beforeEach(function(done) {
-      self = this;
-      // Ensure the bucket exists
-      this.options.fallback = {
-        bucket: 'fallback-bucket'
-      };
-
-      this.s3Storage = new S3Storage(this.options);
-
-      var bucketParams = {ACL: 'public-read', Bucket: this.options.fallback.bucket};
-      this.s3Storage._s3Fallback.createBucket(bucketParams, function(err) {
-        if (err && err.code !== 'BucketAlreadyExists') return done(err);
-        done();
-      });
-    });
-
-    it('file exists in fallback but not primary', function(done) {
-      var filename = shortid.generate() + '.txt';
-      var s3Options = {
-        Bucket: this.options.fallback.bucket,
-        Key: filename,
-        Body: '123',
-        ContentType: 'text/plain'
-      };
-
-      async.series([
-        function(cb) {
-          self.s3Storage._s3Fallback.upload(s3Options, cb);
-        },
-        function(cb) {
-          self.s3Storage.fileExists(filename, function(err, exists) {
-            if (err) return cb(err);
-            assert.equal(exists, 'fallback');
-            cb();
-          });
-        }
-      ], done);
-    });
-
-    it('file does not exist in primary or fallback', function(done) {
-      var filename = shortid.generate() + '.txt';
-
-      self.s3Storage.fileExists(filename, function(err, exists) {
-        if (err) return done(err);
-        assert.equal(exists, false);
-        done();
-      });
-    });
-
-    it('reads object from fallback bucket if specified', function(done) {
-      var filename = shortid.generate() + '.txt';
-      var s3Options = {
-        Bucket: this.options.fallback.bucket,
-        Key: filename,
-        Body: '123',
-        ContentType: 'text/plain'
-      };
-
-      self.s3Storage._s3Fallback.upload(s3Options, function() {
-        var output = '';
-        self.s3Storage.readFileStream(filename, true)
-          .pipe(through(function(chunk, enc, cb) {
-            output += chunk.toString();
-            cb();
-          }, function() {
-            assert.equal(output, '123');
-            done();
-          }));
       });
     });
   });
